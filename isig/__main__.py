@@ -11,7 +11,11 @@ import argparse
 import numpy as np
 from pymesher.models_1D import model
 from pymesher.skeleton import Skeleton
+from pymesher.global_numbering import get_global_lexi
 import sys
+
+from .map_spheroid import map_spheroid
+from .gll import gauss_lobatto_legendre_quadruature_points_weights_fast as get_gll
 
 
 if __name__ == "__main__":
@@ -58,8 +62,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # input to SI
+    # input to SI and consistency checks
     max_depth = 1e3 * args.max_depth
+    if args.min_dist < 0:
+        raise ValueError('min_dist < 0')
+    if args.max_dist < 0:
+        raise ValueError('max_dist < 0')
+    if args.max_depth< 0:
+        raise ValueError('depth < 0')
 
     mod = model.read(args.model_file)
 
@@ -89,5 +99,22 @@ if __name__ == "__main__":
         full_sphere=False)
 
     m = sk.get_unstructured_mesh()
-    m.plot()
 
+    gll = get_gll(args.npol)[0]
+    gll_x, gll_y = map_spheroid(gll, m.points[m.connectivity])
+
+    r = np.sqrt(gll_x.ravel() ** 2 +  gll_y.ravel() ** 2)
+    theta = np.arctan2(gll_x.ravel(), gll_y.ravel())
+
+    theta_idx, ntheta = get_global_lexi(theta[np.newaxis,:])
+
+    theta_unique = theta[np.unique(theta_idx, return_index=True)[1]]
+    theta_unique
+
+    for i in np.arange(ntheta):
+        print np.rad2deg(theta_unique[i])
+        print (1. - r[theta_idx==i]) * mod.scale / 1e3
+
+    import matplotlib.pyplot as plt
+    plt.scatter(gll_x, gll_y)
+    plt.show()
