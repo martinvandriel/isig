@@ -24,7 +24,7 @@ def map_spheroid(gll_points, nodes):
     points_x = np.zeros((nelem, npol, npol))
     points_y = np.zeros((nelem, npol, npol))
 
-    xi, eta = np.meshgrid(gll_points, gll_points, indexing='ij')
+    eta, xi = np.meshgrid(gll_points, gll_points, indexing='ij')
 
     for i, (_r, _t) in enumerate(zip(r, theta)):
         points_x[i] = \

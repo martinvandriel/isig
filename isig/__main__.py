@@ -57,8 +57,8 @@ if __name__ == "__main__":
         help='Number of Elements per Wavelength.')
 
     parser.add_argument(
-        '-n', '--npol', type=int, default=4,
-        help='Polynomial order used for interpolation.')
+        '-n', '--npol', type=int, default=5,
+        help='Polynomial order used for interpolation + 1.')
 
     args = parser.parse_args()
 
@@ -99,6 +99,7 @@ if __name__ == "__main__":
         full_sphere=False)
 
     m = sk.get_unstructured_mesh()
+    m.plot(show=False)
 
     gll = get_gll(args.npol)[0]
     gll_x, gll_y = map_spheroid(gll, m.points[m.connectivity])
@@ -113,8 +114,8 @@ if __name__ == "__main__":
 
     for i in np.arange(ntheta):
         print np.rad2deg(theta_unique[i])
-        print (1. - r[theta_idx==i]) * mod.scale / 1e3
+        print np.sort((1. - r[theta_idx==i]) * mod.scale / 1e3)
 
     import matplotlib.pyplot as plt
-    plt.scatter(gll_x, gll_y)
+    plt.scatter(gll_x, gll_y, color='r')
     plt.show()
