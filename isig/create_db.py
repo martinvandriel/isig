@@ -9,11 +9,13 @@ A new python script.
     None
 '''
 import getpass
-import socket
 from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import h5netcdf
+import socket
+import sys
+import os
 
 from .gll import gauss_lobatto_legendre_quadruature_points_weights_fast as \
     get_gll
@@ -54,21 +56,20 @@ from .map_spheroid import map_spheroid
 #       }
 
 
-def create_db(fname, model, points, connectivity, gll_x, gll_y, t=None):
+def create_db(fname, model, points, connectivity, npol=5, dt=0.1,
+              npts=1000):
 
-    if t is None:
-        t = np.arange(0., 1000) * 0.1
-    dt = t[1] - t[0]
+    gll = get_gll(npol)[0]
+    gll_x, gll_y = map_spheroid(gll, points[connectivity])
 
-    nelem = gll_x.shape[0]
-    npol = gll_x.shape[1]
+    nelem = connectivity.shape[0]
     nquad = 4
 
     with h5netcdf.File(fname, "w") as f:
 
         f.dimensions = {
             'gllpoints_all': gll_x.size,
-            'snapshots': t.shape[0],
+            'snapshots': npts,
             'ipol': npol,
             'jpol': npol,
             'nvars': 5,
@@ -85,7 +86,7 @@ def create_db(fname, model, points, connectivity, gll_x, gll_y, t=None):
         # MESH GROUP
         mesh_group = f.create_group("Mesh")
         mesh_group.dimensions = {
-            #'elements': nelem,
+            # 'elements': nelem,
             'control_points': nquad,
             'npol': npol
         }
@@ -137,9 +138,8 @@ def create_db(fname, model, points, connectivity, gll_x, gll_y, t=None):
                                          'float32')
         var[:] = model.get_elastic_parameter('MU', r, mp)
 
-
         # GLOBAL ATTRIBUTES
-        # @TODO: replace place holder
+        # @TODO: replace place holder and meaningless names
         f.attrs['dump type (displ_only, displ_velo, fullfields)'] = \
             'displ_only'
         # Don't make sense for Merged DBs
@@ -148,14 +148,10 @@ def create_db(fname, model, points, connectivity, gll_x, gll_y, t=None):
         f.attrs['background model'] = model.name
         f.attrs['git commit hash'] = ''
         f.attrs['datetime'] = str(datetime.now())
-        f.attrs['compiler brand'] = ''
-        f.attrs['compiler version'] = ''
-        f.attrs['user name'] = getpass.getuser()
-        f.attrs['host name'] = socket.gethostname()
         f.attrs['source time function'] = ''
         f.attrs['npol'] = npol
         f.attrs['file version'] = 0
-        f.attrs['number of strain dumps'] = t.shape[0]
+        f.attrs['number of strain dumps'] = npts
         f.attrs['scalar source magnitude'] = 0.
         f.attrs['strain dump sampling rate in sec'] = dt
         f.attrs['source shift factor in sec'] = 0.
@@ -170,3 +166,12 @@ def create_db(fname, model, points, connectivity, gll_x, gll_y, t=None):
         f.attrs['kernel wavefield colatmax'] = np.rad2deg(theta.max())
         f.attrs['source depth in km'] = 0.
         f.attrs['nelem_kwf_global'] = 0
+
+        f.attrs['compiler brand'] = ''
+        f.attrs['compiler version'] = ''
+        f.attrs['user name'] = getpass.getuser()
+        f.attrs['host name'] = socket.gethostname()
+        f.attrs['rundir'] = os.getcwdu()
+        f.attrs['cmdl'] = 'python -m isig ' + ' '.join(sys.argv[1:])
+
+    return gll_x, gll_y

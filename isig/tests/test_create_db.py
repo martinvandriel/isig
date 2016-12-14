@@ -22,9 +22,8 @@ from ..map_spheroid import map_spheroid
 def test_create_db():
 
     mod = models_1D.model.built_in('prem_ani')
-    mod.plot()
     npol = 5
-    discontinuities = mod.discontinuities #np.array([0., .9, 1.])
+    discontinuities = mod.discontinuities
     discontinuities = discontinuities[[0, -3, -2, -1]]
     nlayer = len(discontinuities) - 1
     hmax = np.ones(nlayer) * 0.5
@@ -35,8 +34,5 @@ def test_create_db():
 
     m = sk.get_unstructured_mesh()
 
-    gll = get_gll(npol)[0]
-    gll_x, gll_y = map_spheroid(gll, m.points[m.connectivity])
-
-    create_db('test.h5', mod, m.points, m.connectivity, gll_x, gll_y)
+    create_db('test.h5', mod, m.points, m.connectivity, npol)
     os.remove('test.h5')

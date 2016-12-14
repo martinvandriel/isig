@@ -15,8 +15,10 @@ from pymesher.global_numbering import get_global_lexi
 import sys
 
 from .map_spheroid import map_spheroid
-from .gll import gauss_lobatto_legendre_quadruature_points_weights_fast as get_gll
+from .create_db import create_db
 
+
+DEFAULT_FILE_NAME = 'isig_<modelname>_<period>s_<depth>km'
 
 if __name__ == "__main__":
 
@@ -40,6 +42,11 @@ if __name__ == "__main__":
         '-p', '--period', type=float, default=50.,
         help='Shortest period to resolve.')
 
+    parser.add_argument('-dt', type=float, default=1., help='Sample rate.')
+
+    parser.add_argument('-npts', type=int, default=3600,
+                        help='Number of time samples.')
+
     parser.add_argument(
         '-d', '--max_depth', type=float, default=100.,
         help='Maximum source depth in km.')
@@ -60,6 +67,14 @@ if __name__ == "__main__":
         '-n', '--npol', type=int, default=5,
         help='Polynomial order used for interpolation + 1.')
 
+    parser.add_argument(
+        '-o', '--output_filename', type=str, default=DEFAULT_FILE_NAME,
+        help='Filename for the database will be <output_filename>.nc.')
+
+    parser.add_argument(
+        '--plot', dest='plot', action='store_true', default=False,
+        help='Show plots of mesh and interpolation points.')
+
     args = parser.parse_args()
 
     # input to SI and consistency checks
@@ -68,7 +83,7 @@ if __name__ == "__main__":
         raise ValueError('min_dist < 0')
     if args.max_dist < 0:
         raise ValueError('max_dist < 0')
-    if args.max_depth< 0:
+    if args.max_depthi < 0:
         raise ValueError('depth < 0')
 
     mod = model.read(args.model_file)
@@ -99,23 +114,51 @@ if __name__ == "__main__":
         full_sphere=False)
 
     m = sk.get_unstructured_mesh()
-    m.plot(show=False)
 
-    gll = get_gll(args.npol)[0]
-    gll_x, gll_y = map_spheroid(gll, m.points[m.connectivity])
+    if args.output_filename == DEFAULT_FILE_NAME:
+        filename = 'isig_%s_%gs_%dkm.nc' % (mod.name, args.period,
+                                            args.max_depth)
+    else:
+        filename = args.output_meshname + '.nc'
 
-    r = np.sqrt(gll_x.ravel() ** 2 +  gll_y.ravel() ** 2)
-    theta = np.arctan2(gll_x.ravel(), gll_y.ravel())
+    gll_x, gll_y = create_db(filename, mod, m.points, m.connectivity,
+                             npol=args.npol, dt=args.dt, npts=args.npts)
+    # print mesh info
+    info = [
+        '=' * 78,
+        'SUMMARY OF MESH PROPERTIES:',
+        '',
+        '  model name                 | %9s' % (mod.name,),
+        '  period                     | %9.2f s' % (args.period,),
+        '  elements per wavelength    | %9.2f' %
+        (args.elements_per_wavelength,),
+        '',
+        '  time step dt               | %9.4f s' % (args.dt,),
+        '  number of time samples     | %9d' % (args.npts,),
+        '  number of elements         | %9d' % (m.nelem,),
+        '  number of points           | %9d' % (gll_x.size,),
+        '  estimated storage (uncomp) | %9.4f GB' % (
+            gll_x.size * args.npts * 5 * 4. / 1024. ** 3,),
+        '=' * 78]
 
-    theta_idx, ntheta = get_global_lexi(theta[np.newaxis,:])
+    info_str = '\n'.join(info)
+    print(info_str)
 
-    theta_unique = theta[np.unique(theta_idx, return_index=True)[1]]
-    theta_unique
+    if args.plot:
+        import matplotlib.pyplot as plt
+        m.plot(show=False)
+        plt.scatter(gll_x, gll_y, color='r')
+        plt.show()
 
-    for i in np.arange(ntheta):
-        print np.rad2deg(theta_unique[i])
-        print np.sort((1. - r[theta_idx==i]) * mod.scale / 1e3)
+    # create sorted and unique point set:
+    # r = np.sqrt(gll_x.ravel() ** 2 +  gll_y.ravel() ** 2)
+    # theta = np.arctan2(gll_x.ravel(), gll_y.ravel())
 
-    import matplotlib.pyplot as plt
-    plt.scatter(gll_x, gll_y, color='r')
-    plt.show()
+    # theta_idx, ntheta = get_global_lexi(theta[np.newaxis,:])
+
+    # theta_unique = theta[np.unique(theta_idx, return_index=True)[1]]
+    # theta_unique
+
+    # for i in np.arange(ntheta):
+    #     print np.rad2deg(theta_unique[i])
+    #     print np.sort((1. - r[theta_idx==i]) * mod.scale / 1e3)
