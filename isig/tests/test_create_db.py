@@ -8,15 +8,11 @@ A new python script.
 :license:
     None
 '''
-import matplotlib.pyplot as plt
 import numpy as np
 from pymesher import Skeleton, models_1D
 import os
 
 from ..create_db import create_db
-from ..gll import gauss_lobatto_legendre_quadruature_points_weights_fast as \
-    get_gll
-from ..map_spheroid import map_spheroid
 
 
 def test_create_db():

@@ -10,7 +10,6 @@ A new python script.
 '''
 import getpass
 from datetime import datetime
-import matplotlib.pyplot as plt
 import numpy as np
 import h5netcdf
 import socket

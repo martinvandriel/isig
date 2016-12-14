@@ -11,10 +11,8 @@ import argparse
 import numpy as np
 from pymesher.models_1D import model
 from pymesher.skeleton import Skeleton
-from pymesher.global_numbering import get_global_lexi
 import sys
 
-from .map_spheroid import map_spheroid
 from .create_db import create_db
 
 

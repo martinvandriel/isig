@@ -10,8 +10,8 @@ Tests for interpolating polynomial bases and there derivatives.
 """
 import numpy as np
 
-from ..basis_polynomials import *
-from ..gll import *
+from ..basis_polynomials import lagrange_basis_derivative_matrix
+from ..gll import gauss_lobatto_legendre_quadruature_points_weights_fast
 
 
 def test_lagrange_basis_derivative_matrix():
