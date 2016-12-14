@@ -81,7 +81,7 @@ if __name__ == "__main__":
         raise ValueError('min_dist < 0')
     if args.max_dist < 0:
         raise ValueError('max_dist < 0')
-    if args.max_depthi < 0:
+    if args.max_depth < 0:
         raise ValueError('depth < 0')
 
     mod = model.read(args.model_file)
