@@ -1,6 +1,6 @@
-# ISIG: Instaseis Seismosphere Input Generator
+# ISIG: Instaseis Sismospher Input Generator
 
-Generate Seismospher Input:
+Generate Sismospher Input:
 ```
 python -m isig -h
 usage: python -m isig [-h] -m MODEL_FILE [-p PERIOD] [-d MAX_DEPTH]
